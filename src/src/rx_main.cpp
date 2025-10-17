@@ -598,11 +598,11 @@ bool ICACHE_RAM_ATTR HandleSendTelemetryResponse()
     // GemX does not switch due to the time required to reconfigure the LR1121 params.
     if ((OtaNonce/ExpressLRS_currAirRate_Modparams->FHSShopInterval) % 2 == 0 || !sendGeminiBuffer || FHSSuseDualBand)
     {
-        Radio.TXnb((uint8_t*)&otaPkt, ExpressLRS_currAirRate_Modparams->PayloadLength, sendGeminiBuffer, (uint8_t*)&otaPktGemini, transmittingRadio);
+        Radio.TXnb((uint8_t*)&otaPkt, sendGeminiBuffer, (uint8_t*)&otaPktGemini, transmittingRadio);
     }
     else
     {
-        Radio.TXnb((uint8_t*)&otaPktGemini, ExpressLRS_currAirRate_Modparams->PayloadLength, sendGeminiBuffer, (uint8_t*)&otaPkt, transmittingRadio);
+        Radio.TXnb((uint8_t*)&otaPktGemini, sendGeminiBuffer, (uint8_t*)&otaPkt, transmittingRadio);
     }
 
     if (transmittingRadio == SX12XX_Radio_NONE)
@@ -2029,6 +2029,14 @@ void setup()
     }
     else
     {
+#if defined(PLATFORM_ESP32)
+        // arduino-espressif32 HardwareSerial's constructor for UART0 saves and attaches to GPIO 1 and 3, which
+        // will reset any other use of them when begin() is actually called for UART0 by CRSFHandset/SerialIO.
+        // Calling end() here, will call _uartDetachPins() on the underlying UART implementation so they won't
+        // be saved later (fixed upstream, coming someday)
+        Serial.end();
+#endif
+
         // default to CRSF protocol and the compiled baud rate
         serialBaud = firmwareOptions.uart_baud;
 
